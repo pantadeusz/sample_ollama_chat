@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ollama Chat</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>🤖 Ollama Chat</h1>
+            <div class="controls">
+                <select id="modelSelect" class="model-select">
+                    <option value="">Ładowanie modeli...</option>
+                </select>
+                <button id="reloadConfig" class="btn-secondary">🔄 Przeładuj konfigurację</button>
+            </div>
+        </header>
+        
+        <div id="chatContainer" class="chat-container">
+            <div id="messages" class="messages"></div>
+        </div>
+        
+        <div class="input-container">
+            <textarea 
+                id="messageInput" 
+                class="message-input" 
+                placeholder="Wpisz wiadomość..."
+                rows="1"></textarea>
+            <button id="sendButton" class="btn-primary">Wyślij</button>
+        </div>
+    </div>
+    
+    <script type="module" src="app.js"></script>
+</body>
+</html>
