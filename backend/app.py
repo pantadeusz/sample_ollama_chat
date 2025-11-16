@@ -78,10 +78,9 @@ def chat():
             messages.insert(0, acknowledgment)
             messages.insert(0, context_injection)
     
-    # Debug logging
-    logger.info(f"Sending {len(messages)} messages to model {model}")
-    logger.info(f"System prompt length: {len(system_prompt) if system_prompt else 0}")
-    logger.info(f"Message roles: {[m.get('role') for m in messages]}")
+    logger.debug(f"Sending {len(messages)} messages to model {model}")
+    logger.debug(f"System prompt length: {len(system_prompt) if system_prompt else 0}")
+    logger.debug(f"Message roles: {[m.get('role') for m in messages]}")
     
     if stream:
         def generate():
