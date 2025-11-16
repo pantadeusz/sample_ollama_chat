@@ -3,6 +3,7 @@ from flask import Flask, request, jsonify, Response, stream_with_context
 from flask_cors import CORS
 import json
 import logging
+import datetime
 from ollama_client import OllamaClient
 from config_loader import ConfigLoader
 
@@ -63,13 +64,14 @@ def chat():
         if not has_system:
             # For models that don't respect system prompts well (like Mistral),
             # we use a strong context injection approach
+            current_date = datetime.datetime.now().strftime("%B %d, %Y")
             context_injection = {
                 'role': 'user',
-                'content': f'IMPORTANT INSTRUCTIONS: You must answer based ONLY on the following information. Do not use any other knowledge.\n\n{system_prompt}\n\n---\n\nConfirm you understand and will answer based exclusively on the information provided above.'
+                'content': f'IMPORTANT INSTRUCTIONS: You must answer based ONLY on the following information. Do not use any other knowledge.\n\nToday is {current_date}.\n\n{system_prompt}\n\n---\n\nIMPORTANT: Answer questions directly and naturally. Never mention where the information came from (e.g., don\'t say "according to his CV", "based on the information", "from the context", etc.). Present all facts as if you know them directly. Be confident and conversational.'
             }
             acknowledgment = {
                 'role': 'assistant', 
-                'content': 'Understood. I will answer all questions based exclusively on the provided information. I will not use external knowledge.'
+                'content': 'Understood. I will answer questions directly and naturally without referencing sources or mentioning where the information came from.'
             }
             
             # Insert at the beginning
