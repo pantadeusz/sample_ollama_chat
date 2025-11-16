@@ -2,8 +2,12 @@
 from flask import Flask, request, jsonify, Response, stream_with_context
 from flask_cors import CORS
 import json
+import logging
 from ollama_client import OllamaClient
 from config_loader import ConfigLoader
+
+# Set up logging
+logger = logging.getLogger(__name__)
 
 
 app = Flask(__name__, static_folder='../frontend', static_url_path='')
@@ -52,8 +56,30 @@ def chat():
     
     # Add system prompt if configured and not already present
     system_prompt = config_loader.get('system_prompt')
-    if system_prompt and (not messages or messages[0].get('role') != 'system'):
-        messages.insert(0, {'role': 'system', 'content': system_prompt})
+    if system_prompt:
+        # Check if system prompt already exists
+        has_system = messages and messages[0].get('role') == 'system'
+        
+        if not has_system:
+            # For models that don't respect system prompts well (like Mistral),
+            # we use a strong context injection approach
+            context_injection = {
+                'role': 'user',
+                'content': f'IMPORTANT INSTRUCTIONS: You must answer based ONLY on the following information. Do not use any other knowledge.\n\n{system_prompt}\n\n---\n\nConfirm you understand and will answer based exclusively on the information provided above.'
+            }
+            acknowledgment = {
+                'role': 'assistant', 
+                'content': 'Understood. I will answer all questions based exclusively on the provided information. I will not use external knowledge.'
+            }
+            
+            # Insert at the beginning
+            messages.insert(0, acknowledgment)
+            messages.insert(0, context_injection)
+    
+    # Debug logging
+    logger.info(f"Sending {len(messages)} messages to model {model}")
+    logger.info(f"System prompt length: {len(system_prompt) if system_prompt else 0}")
+    logger.info(f"Message roles: {[m.get('role') for m in messages]}")
     
     if stream:
         def generate():

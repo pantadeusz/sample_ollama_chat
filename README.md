@@ -44,7 +44,14 @@ ollama pull smallthinker
 
 ## ⚙️ Konfiguracja
 
-Edytuj plik `config/config.json` aby skonfigurować domyślny model i inne opcje:
+### Podstawowa konfiguracja
+
+1. **Skopiuj przykładową konfigurację:**
+```bash
+cp config/config.example.json config/config.json
+```
+
+2. **Edytuj plik `config/config.json`** aby skonfigurować domyślny model i inne opcje:
 
 ```json
 {
@@ -63,6 +70,37 @@ Edytuj plik `config/config.json` aby skonfigurować domyślny model i inne opcje
 - **system_prompt**: Systemowy prompt dla asystenta AI
 - **temperature**: Parametr temperatury (0.0 - 1.0) - wyższa wartość = bardziej kreatywne odpowiedzi
 - **stream**: Czy streamować odpowiedzi (true/false)
+- **context_directory**: (opcjonalnie) Ścieżka do katalogu z plikami kontekstu (.md)
+- **context_header**: (opcjonalnie) Nagłówek dodawany przed kontekstem
+- **context_footer**: (opcjonalnie) Stopka dodawana po kontekście
+- **starter_message**: (opcjonalnie) Wiadomość powitalna wyświetlana użytkownikowi
+
+### Zaawansowane: Dodawanie kontekstu osobistego
+
+Aplikacja obsługuje automatyczne ładowanie kontekstu z plików Markdown, co pozwala utworzyć asystenta AI ze specjalistyczną wiedzą:
+
+1. **Utwórz katalog kontekstu:**
+```bash
+mkdir context
+```
+
+2. **Dodaj pliki .md z informacjami:**
+```bash
+# Przykład: context/cv.md, context/projects.md, context/publications.md
+```
+
+3. **Zaktualizuj config.json:**
+```json
+{
+  "model": "mistral:latest",
+  "context_directory": "../context",
+  "context_header": "--- Informacje kontekstowe ---\n\n",
+  "context_footer": "\n\n--- Koniec kontekstu ---\n\n",
+  "system_prompt": "Jesteś asystentem AI z dostępem do specjalistycznej wiedzy..."
+}
+```
+
+**Uwaga:** Katalog `context/` i plik `config/config.json` są w `.gitignore` i nie będą commitowane do repozytorium. To pozwala na utrzymanie prywatności osobistych informacji podczas współdzielenia kodu.
 
 ## 🏃 Uruchomienie
 
@@ -203,7 +241,7 @@ app.run(debug=True, host='0.0.0.0', port=5001)  # Zmień na inny port
 
 MIT License
 
-Copyright (c) 2025 Tadeusz Puźniakwski
+Copyright (c) 2025
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
