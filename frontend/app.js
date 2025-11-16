@@ -231,7 +231,27 @@ function formatMessageContent(content) {
         if (part.startsWith('<pre') || part.startsWith('<code>')) {
             return part; // Keep pre and code tags as-is
         }
-        return escapeHtml(part).replace(/\n/g, '<br>');
+        // Escape HTML first
+        let processed = escapeHtml(part);
+        
+        // Apply markdown formatting (outside of code blocks)
+        // Bold: **text** or __text__
+        processed = processed.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+        processed = processed.replace(/__(.+?)__/g, '<strong>$1</strong>');
+        
+        // Italics: *text* or _text_ (but not inside words)
+        processed = processed.replace(/\*(.+?)\*/g, '<em>$1</em>');
+        processed = processed.replace(/(?:^|[^a-zA-Z0-9])_(.+?)_(?:[^a-zA-Z0-9]|$)/g, (match, p1) => {
+            return match[0] === '_' ? `<em>${p1}</em>` : match[0] + `<em>${p1}</em>` + (match[match.length - 1] === '_' ? '' : match[match.length - 1]);
+        });
+        
+        // Links: [text](url)
+        processed = processed.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+        
+        // Replace newlines with <br>
+        processed = processed.replace(/\n/g, '<br>');
+        
+        return processed;
     }).join('');
     
     return formatted;
