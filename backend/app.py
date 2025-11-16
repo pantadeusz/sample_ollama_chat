@@ -37,11 +37,11 @@ def get_config():
     })
 
 
-@app.route('/api/models', methods=['GET'])
-def get_models():
-    """Get available Ollama models."""
-    models = ollama_client.list_models()
-    return jsonify(models)
+# @app.route('/api/models', methods=['GET'])
+# def get_models():
+#     """Get available Ollama models."""
+#     models = ollama_client.list_models()
+#     return jsonify(models)
 
 
 @app.route('/api/chat', methods=['POST'])
@@ -49,8 +49,8 @@ def chat():
     """Handle chat requests."""
     data = request.json
     messages = data.get('messages', [])
-    model = data.get('model', config_loader.get('model'))
-    stream = data.get('stream', config_loader.get('stream', True))
+    model = config_loader.get('model')
+    stream = config_loader.get('stream', True)
     
     if not messages:
         return jsonify({'error': 'No messages provided'}), 400

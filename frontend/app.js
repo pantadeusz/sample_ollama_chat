@@ -19,9 +19,7 @@ const state = {
 const elements = {
     messages: document.getElementById('messages'),
     messageInput: document.getElementById('messageInput'),
-    sendButton: document.getElementById('sendButton'),
-    modelSelect: document.getElementById('modelSelect'),
-    reloadConfigButton: document.getElementById('reloadConfig')
+    sendButton: document.getElementById('sendButton')
 };
 
 /**
@@ -30,7 +28,6 @@ const elements = {
 async function init() {
     setupEventListeners();
     await loadConfig();
-    await loadModels();
     addSystemMessage(state.starterMessage);
 }
 
@@ -45,8 +42,6 @@ function setupEventListeners() {
             handleSendMessage();
         }
     });
-    elements.modelSelect.addEventListener('change', handleModelChange);
-    elements.reloadConfigButton.addEventListener('click', handleReloadConfig);
     
     // Auto-resize textarea
     elements.messageInput.addEventListener('input', autoResizeTextarea);
@@ -73,83 +68,7 @@ async function loadConfig() {
         state.starterMessage = state.config.starter_message || state.starterMessage;
     } catch (error) {
         console.error('Error loading config:', error);
-        addErrorMessage('Błąd ładowania konfiguracji');
-    }
-}
-
-/**
- * Load available models from Ollama
- */
-async function loadModels() {
-    try {
-        const response = await fetch(`${API_BASE_URL}/models`);
-        if (!response.ok) throw new Error('Failed to load models');
-        
-        const data = await response.json();
-        
-        if (data.error) {
-            throw new Error(data.error);
-        }
-        
-        populateModelSelect(data.models || []);
-    } catch (error) {
-        console.error('Error loading models:', error);
-        elements.modelSelect.innerHTML = '<option value="">Błąd ładowania modeli</option>';
-        addErrorMessage('Nie można załadować modeli. Upewnij się, że Ollama działa.');
-    }
-}
-
-/**
- * Populate model select dropdown
- */
-function populateModelSelect(models) {
-    elements.modelSelect.innerHTML = '';
-    
-    if (models.length === 0) {
-        elements.modelSelect.innerHTML = '<option value="">Brak dostępnych modeli</option>';
-        return;
-    }
-    
-    models.forEach(model => {
-        const option = document.createElement('option');
-        option.value = model.name;
-        option.textContent = model.name;
-        if (model.name === state.currentModel) {
-            option.selected = true;
-        }
-        elements.modelSelect.appendChild(option);
-    });
-}
-
-/**
- * Handle model selection change
- */
-function handleModelChange(e) {
-    state.currentModel = e.target.value;
-    addSystemMessage(`Zmieniono model na: ${state.currentModel}`);
-}
-
-/**
- * Handle reload configuration
- */
-async function handleReloadConfig() {
-    try {
-        const response = await fetch(`${API_BASE_URL}/reload-config`, {
-            method: 'POST'
-        });
-        
-        if (!response.ok) throw new Error('Failed to reload config');
-        
-        const data = await response.json();
-        state.config = data.config;
-        state.currentModel = data.config.model;
-        state.starterMessage = data.config.starter_message || state.starterMessage;
-        
-        addSystemMessage('Konfiguracja została przeładowana');
-        await loadModels();
-    } catch (error) {
-        console.error('Error reloading config:', error);
-        addErrorMessage('Błąd przeładowania konfiguracji');
+        addErrorMessage('Error loading configuration');
     }
 }
 
@@ -160,11 +79,6 @@ async function handleSendMessage() {
     const message = elements.messageInput.value.trim();
     
     if (!message || state.isLoading) return;
-    
-    if (!state.currentModel) {
-        addErrorMessage('Wybierz model przed wysłaniem wiadomości');
-        return;
-    }
     
     // Add user message
     addMessage('user', message);
@@ -194,9 +108,7 @@ async function sendChatRequest() {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                messages: state.messages,
-                model: state.currentModel,
-                stream: true
+                messages: state.messages
             })
         });
         
@@ -209,7 +121,7 @@ async function sendChatRequest() {
     } catch (error) {
         console.error('Error sending message:', error);
         removeTypingIndicator(typingIndicator);
-        addErrorMessage('Błąd wysyłania wiadomości: ' + error.message);
+        addErrorMessage('Error sending message: ' + error.message);
     } finally {
         state.isLoading = false;
         elements.sendButton.disabled = false;
@@ -241,7 +153,7 @@ async function handleStreamedResponse(response) {
                         const data = JSON.parse(jsonStr);
                         
                         if (data.error) {
-                            addErrorMessage(`Błąd: ${data.error}`);
+                            addErrorMessage(`Error: ${data.error}`);
                             break;
                         }
                         
@@ -266,7 +178,7 @@ async function handleStreamedResponse(response) {
         }
     } catch (error) {
         console.error('Error reading stream:', error);
-        addErrorMessage('Błąd odczytu odpowiedzi');
+        addErrorMessage('Error reading response');
     }
 }
 
