@@ -35,7 +35,7 @@ class OllamaClient:
             "messages": messages,
             "stream": stream,
             "options": {
-                "num_ctx": 16384,  # Increase context window to handle large prompts
+                "num_ctx": 32768,  # Increase context window to handle large prompts
                 "temperature": 0.7
             }
         }

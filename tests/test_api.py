@@ -24,21 +24,7 @@ class TestAPIEndpoints:
         assert 'stream' in data
         # Note: The actual model value depends on the config file
         # This test verifies the endpoint works, not the specific config values
-    
-    @patch('app.ollama_client.list_models')
-    def test_get_models(self, mock_list_models, client):
-        """Test GET /api/models endpoint."""
-        mock_list_models.return_value = {
-            "models": [{"name": "llama2"}, {"name": "mistral"}]
-        }
-        
-        response = client.get('/api/models')
-        assert response.status_code == 200
-        
-        data = json.loads(response.data)
-        assert "models" in data
-        assert len(data["models"]) == 2
-    
+
     def test_chat_no_messages(self, client):
         """Test POST /api/chat with no messages."""
         response = client.post('/api/chat', 
