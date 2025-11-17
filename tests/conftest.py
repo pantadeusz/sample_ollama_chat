@@ -1,10 +1,13 @@
 """Pytest configuration and fixtures."""
+
 import pytest
 import sys
 import os
 
 # Add backend directory to path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../backend')))
+sys.path.insert(
+    0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../backend"))
+)
 
 from app import app as flask_app
 
@@ -12,9 +15,11 @@ from app import app as flask_app
 @pytest.fixture
 def app():
     """Create and configure a test Flask application."""
-    flask_app.config.update({
-        'TESTING': True,
-    })
+    flask_app.config.update(
+        {
+            "TESTING": True,
+        }
+    )
     yield flask_app
 
 

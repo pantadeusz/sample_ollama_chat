@@ -7,6 +7,7 @@ import logging
 import datetime
 from ollama_client import OllamaClient
 from config_loader import ConfigLoader
+from jailbreak_detector import JailbreakDetector
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -18,6 +19,19 @@ CORS(app)
 # Load configuration
 config_loader = ConfigLoader(config_path="../config/config.json")
 ollama_client = OllamaClient(base_url=config_loader.get("ollama_url"))
+
+# Initialize jailbreak detector if configured
+jailbreak_detector = None
+try:
+    jailbreak_detector = JailbreakDetector(
+        ollama_client=ollama_client,
+        model_name=config_loader.get("model"),
+        config_loader=config_loader,
+    )
+    logger.info("Jailbreak detector initialized successfully")
+except ValueError as e:
+    logger.warning(f"Jailbreak detection not configured: {e}")
+    jailbreak_detector = None
 
 
 @app.route("/")
@@ -50,6 +64,28 @@ def chat():
 
     if not messages:
         return jsonify({"error": "No messages provided"}), 400
+
+    # Check for jailbreak attempts if detector is configured
+    if jailbreak_detector:
+        # Get the last user message for jailbreak detection
+        user_messages = [msg for msg in messages if msg.get("role") == "user"]
+        if user_messages:
+            last_user_message = user_messages[-1]["content"]
+            detection_result = jailbreak_detector.detect_jailbreak(last_user_message)
+
+            if detection_result.is_jailbreak:
+                logger.warning(
+                    f"Jailbreak attempt detected: {detection_result.detection_request[:100]}..."
+                )
+                return (
+                    jsonify(
+                        {
+                            "error": "Your message appears to be an attempt to bypass security measures. This request cannot be processed.",
+                            "type": "jailbreak_detected",
+                        }
+                    ),
+                    403,
+                )
 
     # Add system prompt if configured and not already present
     system_prompt = config_loader.get("system_prompt")

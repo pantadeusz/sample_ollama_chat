@@ -44,7 +44,7 @@ class OllamaClient:
         }
 
         try:
-            response = requests.post(url, json=payload, stream=stream, timeout=60)
+            response = requests.post(url, json=payload, stream=stream, timeout=120)
             response.raise_for_status()
 
             if stream:

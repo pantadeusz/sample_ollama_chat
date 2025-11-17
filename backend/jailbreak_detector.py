@@ -5,10 +5,15 @@ from typing import List, Dict, Any, Optional
 from ollama_client import OllamaClient
 from config_loader import ConfigLoader
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 @dataclass(frozen=True)
 class JailbreakDetectionResult:
     """Result of jailbreak detection analysis."""
+
     is_jailbreak: bool
     detection_request: str
     model_response: str
@@ -22,7 +27,9 @@ class JailbreakDetector:
     security measures or coerce the AI into breaking its guidelines.
     """
 
-    def __init__(self, ollama_client: OllamaClient, model_name: str, config_loader: ConfigLoader):
+    def __init__(
+        self, ollama_client: OllamaClient, model_name: str, config_loader: ConfigLoader
+    ):
         """
         Initialize the jailbreak detector.
 
@@ -37,7 +44,7 @@ class JailbreakDetector:
         self._ollama_client = ollama_client
         self._model_name = model_name
         self._config_loader = config_loader
-        
+
         # Validate that jailbreak detection is properly configured
         jailbreak_prompt = self._config_loader.get("jailbreak_prompt")
         if not jailbreak_prompt:
@@ -45,7 +52,7 @@ class JailbreakDetector:
                 "Jailbreak detection is not configured. "
                 "Please set 'jailbreak_prompt' in your config.json file to enable jailbreak detection."
             )
-        
+
         self._jailbreak_prompt_template = jailbreak_prompt
 
     def detect_jailbreak(self, user_prompt: str) -> JailbreakDetectionResult:
@@ -64,18 +71,15 @@ class JailbreakDetector:
 
         try:
             response = self._ollama_client.chat(
-                model=self._model_name,
-                messages=messages,
-                stream=False
+                model=self._model_name, messages=messages, stream=False
             )
-
             model_response = self._extract_response_content(response)
             is_jailbreak = self._analyze_response_for_jailbreak(model_response)
 
             return JailbreakDetectionResult(
                 is_jailbreak=is_jailbreak,
                 detection_request=detection_request,
-                model_response=model_response
+                model_response=model_response,
             )
 
         except Exception as e:
@@ -83,7 +87,7 @@ class JailbreakDetector:
             return JailbreakDetectionResult(
                 is_jailbreak=False,  # Don't block legitimate requests due to errors
                 detection_request=detection_request,
-                model_response=f"Error during detection: {str(e)}"
+                model_response=f"Error during detection: {str(e)}",
             )
 
     def _create_detection_prompt(self, user_prompt: str) -> str:
@@ -112,6 +116,8 @@ class JailbreakDetector:
             return ""
 
         try:
+            for r in response:
+                logger.debug("response:: %s", str(r))
             return response[0].get("message", {}).get("content", "")
         except (IndexError, KeyError, TypeError):
             return ""
@@ -127,4 +133,8 @@ class JailbreakDetector:
             True if jailbreak detected, False otherwise
         """
         normalized_response = model_response.strip().upper()
-        return "JAILBREAK_DETECTED" in normalized_response
+        if "JAILBREAK_DETECTED" in normalized_response:
+            return True
+        if "SAFE" in normalized_response:
+            return False
+        raise ValueError("Invalid model response: " + model_response)
