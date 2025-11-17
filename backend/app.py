@@ -7,6 +7,7 @@ import logging
 import datetime
 import os
 import http
+import hashlib
 from ollama_client import OllamaClient
 from config_loader import ConfigLoader
 from jailbreak_detector import JailbreakDetector
@@ -34,6 +35,9 @@ try:
 except ValueError as e:
     logger.warning(f"Jailbreak detection not configured: {e}")
     jailbreak_detector = None
+
+# Cache for jailbreak detection results: hash -> is_jailbreak
+jailbreak_cache = {}
 
 
 @app.route("/")
@@ -73,26 +77,30 @@ def chat():
     if not messages:
         return jsonify({"error": "No messages provided"}), http.HTTPStatus.BAD_REQUEST
 
-    # Check for jailbreak attempts if detector is configured
+    # Check for jailbreak attempts in all user messages if detector is configured
     if jailbreak_detector:
-        # Get the last user message for jailbreak detection
-        user_messages = [msg for msg in messages if msg.get("role") == "user"]
-        if user_messages:
-            last_user_message = user_messages[-1]["content"]
-            detection_result = jailbreak_detector.detect_jailbreak(last_user_message)
-            if detection_result.is_jailbreak:
-                logger.warning(
-                    f"Jailbreak attempt detected: {detection_result.detection_request[-100:]}"
-                )
-                return (
-                    jsonify(
-                        {
-                            "error": "Your message appears to be an attempt to bypass security measures. This request cannot be processed.",
-                            "type": "jailbreak_detected",
-                        }
-                    ),
-                    http.HTTPStatus.FORBIDDEN,
-                )
+        for message in messages:
+            if message.get("role") == "user":
+                user_content = message["content"]
+                content_hash = hashlib.sha256(user_content.encode()).hexdigest()
+                
+                if content_hash not in jailbreak_cache:
+                    detection_result = jailbreak_detector.detect_jailbreak(user_content)
+                    jailbreak_cache[content_hash] = detection_result.is_jailbreak
+                
+                if jailbreak_cache[content_hash]:
+                    logger.warning(
+                        f"Jailbreak attempt detected in cached message: {user_content[:100]}..."
+                    )
+                    return (
+                        jsonify(
+                            {
+                                "error": "Your message appears to be an attempt to bypass security measures. This request cannot be processed.",
+                                "type": "jailbreak_detected",
+                            }
+                        ),
+                        http.HTTPStatus.FORBIDDEN,
+                    )
 
     # Add system prompt if configured and not already present
     system_prompt = config_loader.get("system_prompt")
