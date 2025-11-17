@@ -131,6 +131,10 @@ class JailbreakDetector:
 
         Returns:
             True if jailbreak detected, False otherwise
+
+        Raises:
+            ValueError: If the model response doesn't contain expected keywords
+                       ("JAILBREAK_DETECTED" or "SAFE")
         """
         normalized_response = model_response.strip().upper()
         if "JAILBREAK_DETECTED" in normalized_response:
