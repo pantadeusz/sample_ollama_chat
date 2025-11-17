@@ -61,6 +61,7 @@ def chat():
     """Handle chat requests."""
     try:
         data = request.get_json()
+        logger.info("DATA: %s", data)
     except Exception:
         return jsonify({"error": "Invalid JSON data"}), http.HTTPStatus.BAD_REQUEST
     if data is None:
