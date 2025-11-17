@@ -117,11 +117,15 @@ cd backend
 python app.py
 ```
 
-The server will start on `http://localhost:5000`
+The server will start on `http://localhost:5001` by default. You can override the port by setting the `FLASK_PORT` environment variable:
+
+```bash
+FLASK_PORT=8080 python app.py  # Runs on port 8080
+```
 
 2. **Open your browser**
 
-Navigate to `http://localhost:5000`
+Navigate to `http://localhost:5001` (or the port you specified)
 
 ## Testing
 

@@ -112,7 +112,14 @@ async function sendChatRequest() {
             })
         });
         
-        if (!response.ok) throw new Error('Failed to send message');
+        if (!response.ok) {
+            // Handle specific error responses
+            if (response.status === 403) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Access forbidden');
+            }
+            throw new Error('Failed to send message');
+        }
         
         removeTypingIndicator(typingIndicator);
         
