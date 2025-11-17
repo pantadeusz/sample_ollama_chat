@@ -228,15 +228,53 @@ function formatMessageContent(content) {
         const lang = language ? ` class="language-${language}"` : '';
         return `<pre${lang}><code>${escapeHtml(code.trim())}</code></pre>`;
     });
+
+    // Replace markdown tables
+    const tableRegex = /(\|.*\|\n\|[-:| ]+\|\n(?:\|.*\|\n)*)/g;
+    formatted = formatted.replace(tableRegex, (match) => {
+        const lines = match.trim().split('\n');
+        if (lines.length < 2) return match; // Not a valid table
+        
+        const headerLine = lines[0];
+        const separatorLine = lines[1];
+        const dataLines = lines.slice(2);
+        
+        // Check if separator line has at least - or :
+        if (!separatorLine.includes('-') && !separatorLine.includes(':')) return match;
+        
+        let html = '<table><thead><tr>';
+        
+        // Parse header
+        const headers = headerLine.split('|').slice(1, -1).map(h => h.trim());
+        headers.forEach(header => {
+            html += `<th>${escapeHtml(header)}</th>`;
+        });
+        html += '</tr></thead><tbody>';
+        
+        // Parse data rows
+        dataLines.forEach(line => {
+            if (line.trim()) {
+                html += '<tr>';
+                const cells = line.split('|').slice(1, -1).map(c => c.trim());
+                cells.forEach(cell => {
+                    html += `<td>${escapeHtml(cell)}</td>`;
+                });
+                html += '</tr>';
+            }
+        });
+        
+        html += '</tbody></table>';
+        return html;
+    });
     
     // Replace inline code (single backticks)
     formatted = formatted.replace(/`([^`]+)`/g, '<code>$1</code>');
     
     // Escape any remaining HTML and preserve line breaks
-    const parts = formatted.split(/(<pre[\s\S]*?<\/pre>|<code>[\s\S]*?<\/code>)/);
+    const parts = formatted.split(/(<pre[\s\S]*?<\/pre>|<code>[\s\S]*?<\/code>|<table[\s\S]*?<\/table>)/);
     formatted = parts.map((part, index) => {
-        if (part.startsWith('<pre') || part.startsWith('<code>')) {
-            return part; // Keep pre and code tags as-is
+        if (part.startsWith('<pre') || part.startsWith('<code>') || part.startsWith('<table>')) {
+            return part; // Keep pre, code, and table tags as-is
         }
         // Escape HTML first
         let processed = escapeHtml(part);
