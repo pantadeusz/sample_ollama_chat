@@ -301,3 +301,24 @@ body {
         max-width: 85%;
     }
 }
+
+/* Footer */
+.footer {
+    padding: 8px 20px;
+    background-color: #f8f9fa;
+    border-top: 1px solid var(--border-color);
+    text-align: center;
+    font-size: 11px;
+    color: #666;
+    line-height: 1.4;
+}
+
+.footer a {
+    color: #666;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.footer a:hover {
+    text-decoration: underline;
+}
