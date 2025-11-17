@@ -51,6 +51,7 @@ class ConfigLoader:
                                 context_header
                                 + context_text
                                 + context_footer
+                                + "\n\nSYSTEM PROMPT:\n\n"
                                 + config["system_prompt"]
                             )
                 return config
