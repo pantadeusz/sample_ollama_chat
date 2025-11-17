@@ -1,247 +1,262 @@
 # Ollama Chat Application
 
-Author: Tadeusz Puźniakwski
+Author: Tadeusz Puźniakowski
 
 Generated using GitHub Copilot.
 
-Prosty interfejs czatu do lokalnego API Ollama z frontendem w czystym JavaScript i backendem w Pythonie.
+A simple chat interface for local Ollama API with pure JavaScript frontend and Python backend, featuring context-aware AI conversations with Markdown rendering and security protections.
 
-## Wymagania
+## Requirements
 
 - Python 3.8+
-- Ollama zainstalowana lokalnie i uruchomiona
-- Przynajmniej jeden model pobrany w Ollama (np. `ollama pull tinyllama`)
+- Ollama installed locally and running
+- At least one model downloaded in Ollama (e.g. `ollama pull llama3.1:8b`)
 
-### Przetestowane modele
+### Tested Models
 
-Następujące modele zostały przetestowane i działają poprawnie:
+The following models have been tested and work correctly:
 
 ```
-NAME                   ID              SIZE  
-smallthinker:latest    945eb1864589    3.6 GB
-tinyllama:latest       2644915ede35    637 MB
+NAME                   ID              SIZE
+llama3.1:8b           various         ~4.7 GB
+mistral:latest        various         ~4.1 GB
+qwen2.5:7b           various         ~4.7 GB
+smallthinker:latest   945eb1864589    3.6 GB
+tinyllama:latest      2644915ede35    637 MB
 ```
 
-### Instalacja
+### Installation
 
-1. **Sklonuj lub pobierz projekt**
+1. **Clone or download the project**
 
-2. **Zainstaluj zależności Pythona**
+2. **Install Python dependencies**
 ```bash
 pip install -r requirements.txt
 ```
 
-3. **Upewnij się, że Ollama działa lokalnie**
+3. **Ensure Ollama is running locally**
 ```bash
-# Sprawdź czy Ollama działa
+# Check if Ollama is running
 curl http://localhost:11434/api/tags
 
-# Jeśli nie masz modeli, pobierz jeden z nich:
-ollama pull tinyllama
-# lub
-ollama pull smallthinker
+# If you don't have models, download one:
+ollama pull llama3.1:8b
+# or
+ollama pull mistral
 ```
 
-## ⚙️ Konfiguracja
+## Configuration
 
-### Podstawowa konfiguracja
+### Basic Configuration
 
-1. **Skopiuj przykładową konfigurację:**
+1. **Copy the example configuration:**
 ```bash
 cp config/config.example.json config/config.json
 ```
 
-2. **Edytuj plik `config/config.json`** aby skonfigurować domyślny model i inne opcje:
+2. **Edit the `config/config.json` file** to configure the default model and other options:
 
 ```json
 {
-  "model": "llama2",
+  "model": "llama3.1:8b",
   "ollama_url": "http://localhost:11434",
-  "system_prompt": "Jesteś pomocnym asystentem AI. Odpowiadaj zwięźle i rzeczowo.",
+  "system_prompt": "You are a helpful AI assistant. Be polite, concise, and helpful.",
+  "starter_message": "Hello! I'm ready to help you. What would you like to know?",
   "temperature": 0.7,
-  "stream": true
+  "stream": true,
+  "context_directory": "../context",
+  "context_header": "--- Context Information ---\n\nIMPORTANT: Use the following information to answer questions accurately.\n\n",
+  "context_footer": "\n\n--- End of Context ---\n\nSystem Instructions:\n\n"
 }
 ```
 
-### Opcje konfiguracji:
+### Configuration Options:
 
-- **model**: Nazwa modelu Ollama do użycia (np. "llama2", "mistral", "codellama")
-- **ollama_url**: URL do lokalnej instancji Ollama
-- **system_prompt**: Systemowy prompt dla asystenta AI
-- **temperature**: Parametr temperatury (0.0 - 1.0) - wyższa wartość = bardziej kreatywne odpowiedzi
-- **stream**: Czy streamować odpowiedzi (true/false)
-- **context_directory**: (opcjonalnie) Ścieżka do katalogu z plikami kontekstu (.md)
-- **context_header**: (opcjonalnie) Nagłówek dodawany przed kontekstem
-- **context_footer**: (opcjonalnie) Stopka dodawana po kontekście
-- **starter_message**: (opcjonalnie) Wiadomość powitalna wyświetlana użytkownikowi
+- **model**: Name of the Ollama model to use (e.g. "llama3.1:8b", "mistral", "qwen2.5:7b")
+- **ollama_url**: URL to the local Ollama instance
+- **system_prompt**: System prompt for the AI assistant
+- **temperature**: Temperature parameter (0.0 - 1.0) - higher value = more creative responses
+- **stream**: Whether to stream responses (true/false)
+- **context_directory**: (optional) Path to directory with context files (.md)
+- **context_header**: (optional) Header added before context
+- **context_footer**: (optional) Footer added after context
+- **starter_message**: (optional) Welcome message displayed to user
 
-### Zaawansowane: Dodawanie kontekstu osobistego
+### Advanced: Adding Personal Context
 
-Aplikacja obsługuje automatyczne ładowanie kontekstu z plików Markdown, co pozwala utworzyć asystenta AI ze specjalistyczną wiedzą:
+The application supports automatic context loading from Markdown files, allowing you to create an AI assistant with specialized knowledge:
 
-1. **Utwórz katalog kontekstu:**
+1. **Create a context directory:**
 ```bash
 mkdir context
 ```
 
-2. **Dodaj pliki .md z informacjami:**
+2. **Add .md files with information:**
 ```bash
-# Przykład: context/cv.md, context/projects.md, context/publications.md
+# Example: context/cv.md, context/projects.md, context/publications.md
 ```
 
-3. **Zaktualizuj config.json:**
+3. **Update config.json:**
 ```json
 {
   "model": "mistral:latest",
   "context_directory": "../context",
-  "context_header": "--- Informacje kontekstowe ---\n\n",
-  "context_footer": "\n\n--- Koniec kontekstu ---\n\n",
-  "system_prompt": "Jesteś asystentem AI z dostępem do specjalistycznej wiedzy..."
+  "context_header": "--- Context Information ---\n\nIMPORTANT: Use the following information to answer questions accurately.\n\n",
+  "context_footer": "\n\n--- End of Context ---\n\nSystem Instructions:\n\n",
+  "system_prompt": "You are an AI assistant with access to specialized knowledge..."
 }
 ```
 
-**Uwaga:** Katalog `context/` i plik `config/config.json` są w `.gitignore` i nie będą commitowane do repozytorium. To pozwala na utrzymanie prywatności osobistych informacji podczas współdzielenia kodu.
+**Note:** The `context/` directory and `config/config.json` file are in `.gitignore` and will not be committed to the repository. This allows you to maintain privacy of personal information while sharing the code.
 
-## 🏃 Uruchomienie
+## Running
 
-1. **Uruchom backend Flask**
+1. **Start the Flask backend**
 ```bash
 cd backend
 python app.py
 ```
 
-Serwer uruchomi się na `http://localhost:5000`
+The server will start on `http://localhost:5000`
 
-2. **Otwórz przeglądarkę**
+2. **Open your browser**
 
-Przejdź do `http://localhost:5000`
+Navigate to `http://localhost:5000`
 
-## 🧪 Testy
+## Testing
 
-Projekt zawiera testy jednostkowe i integracyjne napisane w pytest.
+The project includes unit and integration tests written in pytest.
 
-### Uruchomienie wszystkich testów:
+### Run all tests:
 ```bash
 pytest
 ```
 
-### Uruchomienie testów z pokryciem kodu:
+### Run tests with code coverage:
 ```bash
 pytest --cov=backend --cov-report=html
 ```
 
-Raport pokrycia zostanie wygenerowany w folderze `htmlcov/`.
+Coverage report will be generated in the `htmlcov/` folder.
 
-### Uruchomienie konkretnego pliku testowego:
+### Run specific test files:
 ```bash
 pytest tests/test_config_loader.py
 pytest tests/test_ollama_client.py
 pytest tests/test_api.py
 ```
 
-## 📁 Struktura projektu
+## Project Structure
 
 ```
-demko/
+sample_ollama_chat/
 ├── backend/
 │   ├── __init__.py
-│   ├── app.py                 # Główna aplikacja Flask
-│   ├── ollama_client.py       # Klient API Ollama
-│   └── config_loader.py       # Ładowanie konfiguracji
+│   ├── app.py                 # Main Flask application
+│   ├── ollama_client.py       # Ollama API client
+│   └── config_loader.py       # Configuration loader
 ├── frontend/
-│   ├── index.html             # Główny HTML
-│   ├── app.js                 # Logika czatu (czysty JS)
-│   └── styles.css             # Style CSS
+│   ├── index.html             # Main HTML
+│   ├── app.js                 # Chat logic (pure JS)
+│   └── styles.css             # CSS styles
+├── context/                   # Context files (ignored by git)
+│   ├── cv_clean.md           # CV information
+│   ├── opensource.md         # Open-source portfolio
+│   └── *.md                  # Other context files
 ├── config/
-│   ├── config.json            # Aktywna konfiguracja
-│   └── config.example.json    # Przykładowa konfiguracja
+│   ├── config.json            # Active configuration (ignored)
+│   └── config.example.json    # Example configuration
 ├── tests/
 │   ├── __init__.py
-│   ├── conftest.py            # Konfiguracja pytest
-│   ├── test_config_loader.py  # Testy loadera konfiguracji
-│   ├── test_ollama_client.py  # Testy klienta Ollama
-│   └── test_api.py            # Testy API endpoints
-├── requirements.txt           # Zależności Python
-├── pytest.ini                 # Konfiguracja pytest
-└── README.md                  # Ten plik
+│   ├── conftest.py            # Pytest configuration
+│   ├── test_config_loader.py  # Config loader tests
+│   ├── test_ollama_client.py  # Ollama client tests
+│   └── test_api.py            # API endpoint tests
+├── requirements.txt           # Python dependencies
+├── pytest.ini                 # Pytest configuration
+├── LICENSE                    # MIT License
+└── README.md                  # This file
 ```
 
-## 🔧 API Endpoints
+## API Endpoints
 
 ### GET `/api/config`
-Zwraca aktualną konfigurację.
-
-### GET `/api/models`
-Zwraca listę dostępnych modeli Ollama.
+Returns current configuration (starter message and streaming settings).
 
 ### POST `/api/chat`
-Wysyła wiadomość do Ollama i zwraca odpowiedź.
+Sends a message to Ollama and returns the response.
 
 **Request body:**
 ```json
 {
   "messages": [
-    {"role": "user", "content": "Cześć!"}
-  ],
-  "model": "llama2",
-  "stream": true
+    {"role": "user", "content": "Hello!"}
+  ]
 }
 ```
 
+**Security Features:**
+- Multi-layer prompt injection protection
+- Dynamic date injection for context awareness
+- Immutable system configuration with absolute security rules
+- Confidential context handling
+
 ### POST `/api/reload-config`
-Przeładowuje konfigurację z pliku bez restartu serwera.
+Reloads configuration from file without server restart.
 
-## Funkcje
+## Features
 
-- Czysty JavaScript (ECMAScript) + HTML5
-- Streaming odpowiedzi w czasie rzeczywistym
-- Wybór modelu z listy dostępnych
-- Konfiguracja przez plik JSON
-- Przeładowanie konfiguracji bez restartu
-- Responsywny interfejs
-- Wskaźnik pisania
-- Historia konwersacji
-- Obsługa błędów
-- Formatowanie bloków kodu
-- Testy jednostkowe i integracyjne
+- Pure JavaScript (ECMAScript) + HTML5 frontend
+- Real-time streaming responses
+- Configuration via JSON file
+- Context-aware conversations with Markdown file support
+- **Markdown rendering**: Bold, italics, links, and code blocks
+- Security protections against prompt injection
+- Responsive interface
+- Typing indicator
+- Conversation history
+- Error handling
+- Code block formatting with syntax highlighting
+- Unit and integration tests
+- MIT License
 
-## 🛠️ Rozwiązywanie problemów
+## Troubleshooting
 
-### Ollama nie odpowiada
+### Ollama not responding
 ```bash
-# Sprawdź czy Ollama działa
+# Check if Ollama is running
 ollama serve
 
-# W nowym terminalu sprawdź status
+# In a new terminal check status
 curl http://localhost:11434/api/tags
 ```
 
-### Model nie jest dostępny
+### Model not available
 ```bash
-# Zobacz listę zainstalowanych modeli
+# See list of installed models
 ollama list
 
-# Pobierz nowy model
-ollama pull llama2
+# Download a new model
+ollama pull llama3.1:8b
 ```
 
-### Błędy CORS
-Upewnij się, że `flask-cors` jest zainstalowane:
+### CORS errors
+Make sure `flask-cors` is installed:
 ```bash
 pip install flask-cors
 ```
 
-### Port zajęty
-Zmień port w `backend/app.py`:
+### Port occupied
+Change the port in `backend/app.py`:
 ```python
-app.run(debug=True, host='0.0.0.0', port=5001)  # Zmień na inny port
+app.run(debug=True, host='0.0.0.0', port=5001)  # Change to different port
 ```
 
-## 📝 Licencja
+## License
 
 MIT License
 
-Copyright (c) 2025
+Copyright (c) 2025 Tadeusz Puźniakowski
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -261,18 +276,20 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-## 🤝 Współpraca
+## Contributing
 
-Jeśli chcesz rozwinąć projekt:
-1. Dodaj więcej opcji konfiguracji
-2. Zaimplementuj zapisywanie historii czatu
-3. Dodaj wsparcie dla wielu konwersacji
-4. Dodaj eksport konwersacji do pliku
-5. Zaimplementuj uwierzytelnianie użytkownika
+If you want to develop the project further:
+1. Add more configuration options
+2. Implement chat history saving
+3. Add support for multiple conversations
+4. Add conversation export to file
+5. Implement user authentication
 
-## 📞 Wsparcie
+I'm open to PRs. All change requests should be discussed as issues first.
 
-W razie problemów sprawdź:
-- [Dokumentacja Ollama](https://github.com/ollama/ollama)
-- [Dokumentacja Flask](https://flask.palletsprojects.com/)
-- [MDN Web Docs](https://developer.mozilla.org/) dla JavaScript
+## Support
+
+For issues check:
+- [Ollama Documentation](https://github.com/ollama/ollama)
+- [Flask Documentation](https://flask.palletsprojects.com/)
+- [MDN Web Docs](https://developer.mozilla.org/) for JavaScript
