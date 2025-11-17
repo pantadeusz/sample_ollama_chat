@@ -29,10 +29,7 @@ def index():
 def get_config():
     """Get current configuration."""
     return jsonify({
-        'model': config_loader.get('model'),
-        'system_prompt': config_loader.get('system_prompt'),
         'starter_message': config_loader.get('starter_message', 'Hello! I\'m ready to chat. Choose a model and send a message.'),
-        'temperature': config_loader.get('temperature'),
         'stream': config_loader.get('stream')
     })
 
