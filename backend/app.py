@@ -40,13 +40,6 @@ def get_config():
     )
 
 
-# @app.route('/api/models', methods=['GET'])
-# def get_models():
-#     """Get available Ollama models."""
-#     models = ollama_client.list_models()
-#     return jsonify(models)
-
-
 @app.route("/api/chat", methods=["POST"])
 def chat():
     """Handle chat requests."""
