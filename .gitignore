@@ -41,8 +41,11 @@ htmlcov/
 .DS_Store
 Thumbs.db
 
-# Config (keep example)
+# Config and personal data (keep example files only)
 config/config.json
+context/*
+!context/README.md
+!context/.gitkeep
 
 # Logs
 *.log
