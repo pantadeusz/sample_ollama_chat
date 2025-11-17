@@ -73,7 +73,7 @@ class JailbreakDetector:
             response = self._ollama_client.chat(
                 model=self._model_name, messages=messages, stream=False
             )
-            model_response = self._extract_response_content(response)
+            model_response = self._extract_response_content([o for o in response])
             is_jailbreak = self._analyze_response_for_jailbreak(model_response)
 
             return JailbreakDetectionResult(
@@ -118,7 +118,8 @@ class JailbreakDetector:
         try:
             for r in response:
                 logger.debug("response:: %s", str(r))
-            return response[0].get("message", {}).get("content", "")
+            content = response[0].get("message", {}).get("content", "")
+            return content
         except (IndexError, KeyError, TypeError):
             return ""
 

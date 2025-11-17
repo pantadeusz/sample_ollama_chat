@@ -72,10 +72,9 @@ def chat():
         if user_messages:
             last_user_message = user_messages[-1]["content"]
             detection_result = jailbreak_detector.detect_jailbreak(last_user_message)
-
             if detection_result.is_jailbreak:
                 logger.warning(
-                    f"Jailbreak attempt detected: {detection_result.detection_request[:100]}..."
+                    f"Jailbreak attempt detected: {detection_result.detection_request[-100:]}"
                 )
                 return (
                     jsonify(
