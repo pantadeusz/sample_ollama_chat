@@ -154,7 +154,9 @@ class TestJailbreakDetector:
 
         # Assert
         assert result.is_jailbreak is False
-        assert result.model_response == "Error during detection: Invalid model response: "
+        assert (
+            result.model_response == "Error during detection: Invalid model response: "
+        )
 
     def test_detect_jailbreak_malformed_response(self, detector, mock_ollama_client):
         """Test handling of malformed response structure."""
@@ -169,7 +171,9 @@ class TestJailbreakDetector:
 
         # Assert
         assert result.is_jailbreak is False
-        assert result.model_response == "Error during detection: Invalid model response: "
+        assert (
+            result.model_response == "Error during detection: Invalid model response: "
+        )
 
     def test_create_detection_prompt_format(self, detector):
         """Test that detection prompt is properly formatted."""
