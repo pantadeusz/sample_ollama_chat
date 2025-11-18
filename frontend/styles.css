@@ -19,16 +19,20 @@ body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     background-color: #f0f2f5;
     color: var(--text-color);
-    height: 100vh;
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
     overflow: hidden;
 }
 
 .container {
     display: flex;
     flex-direction: column;
-    height: 100vh;
+    flex: 1;
     max-width: 1200px;
     margin: 0 auto;
+    width: 100%;
     background-color: white;
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
 }
@@ -99,6 +103,7 @@ body {
     overflow-y: auto;
     padding: 20px;
     background-color: #fafafa;
+    min-height: 0;
 }
 
 .messages {
@@ -286,6 +291,7 @@ body {
     .header {
         flex-direction: column;
         align-items: flex-start;
+        padding: 15px;
     }
     
     .controls {
@@ -297,8 +303,16 @@ body {
         width: 100%;
     }
     
+    .chat-container {
+        padding: 15px 10px;
+    }
+    
     .message-content {
         max-width: 85%;
+    }
+    
+    .input-container {
+        padding: 12px 10px;
     }
 }
 
