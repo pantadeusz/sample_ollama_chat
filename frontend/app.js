@@ -29,6 +29,7 @@ async function init() {
     setupEventListeners();
     await loadConfig();
     addSystemMessage(state.starterMessage);
+    elements.messageInput.focus();
 }
 
 /**
