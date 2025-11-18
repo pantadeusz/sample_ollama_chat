@@ -8,5 +8,5 @@
   "stream": true,
   "context_directory": "../context",
   "context_header": "--- Context Information ---\n\nIMPORTANT: Use the following information to answer questions accurately.\n\n",
-  "context_footer": "\n\n--- End of Context ---\n\nSystem Instructions:\n\n"
+  "context_footer": "\n\n--- End of Context ---\n\n"
 }
