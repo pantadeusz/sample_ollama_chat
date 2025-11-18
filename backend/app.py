@@ -83,11 +83,11 @@ def chat():
             if message.get("role") == "user":
                 user_content = message["content"]
                 content_hash = hashlib.sha256(user_content.encode()).hexdigest()
-                
+
                 if content_hash not in jailbreak_cache:
                     detection_result = jailbreak_detector.detect_jailbreak(user_content)
                     jailbreak_cache[content_hash] = detection_result.is_jailbreak
-                
+
                 if jailbreak_cache[content_hash]:
                     logger.warning(
                         f"Jailbreak attempt detected in cached message: {user_content[:100]}..."
@@ -160,4 +160,4 @@ def reload_config():
 
 
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=int(os.environ.get('FLASK_PORT', 5001)))
+    app.run(debug=True, host="0.0.0.0", port=int(os.environ.get("FLASK_PORT", 5001)))

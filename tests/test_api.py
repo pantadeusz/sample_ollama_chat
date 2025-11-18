@@ -34,7 +34,9 @@ class TestAPIEndpoints:
 
     def test_chat_invalid_json(self, client):
         """Test POST /api/chat with invalid JSON data."""
-        response = client.post("/api/chat", data="not json", content_type="application/json")
+        response = client.post(
+            "/api/chat", data="not json", content_type="application/json"
+        )
         assert response.status_code == 400
 
         data = json.loads(response.data)
