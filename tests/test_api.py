@@ -32,6 +32,17 @@ class TestAPIEndpoints:
         data = json.loads(response.data)
         assert "error" in data
 
+    def test_chat_invalid_json(self, client):
+        """Test POST /api/chat with invalid JSON data."""
+        response = client.post(
+            "/api/chat", data="not json", content_type="application/json"
+        )
+        assert response.status_code == 400
+
+        data = json.loads(response.data)
+        assert "error" in data
+        assert "Invalid JSON data" in data["error"]
+
     @patch("app.ollama_client.chat")
     def test_chat_with_messages(self, mock_chat, client):
         """Test POST /api/chat with valid messages."""

@@ -29,6 +29,7 @@ async function init() {
     setupEventListeners();
     await loadConfig();
     addSystemMessage(state.starterMessage);
+    elements.messageInput.focus();
 }
 
 /**
@@ -112,7 +113,14 @@ async function sendChatRequest() {
             })
         });
         
-        if (!response.ok) throw new Error('Failed to send message');
+        if (!response.ok) {
+            // Handle specific error responses
+            if (response.status === 403) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Access forbidden');
+            }
+            throw new Error('Failed to send message');
+        }
         
         removeTypingIndicator(typingIndicator);
         
@@ -210,31 +218,90 @@ function updateMessageContent(element, content) {
 }
 
 /**
- * Format message content with code blocks
+ * Format message content with markdown
  */
 function formatMessageContent(content) {
-    // Replace triple backticks code blocks with <pre> elements
-    // Supports both ```code``` and ```language\ncode\n```
+    let formatted = formatCodeBlocks(content);
+    formatted = formatTables(formatted);
+    formatted = formatInlineCode(formatted);
+    formatted = formatInlineMarkdown(formatted);
+    return formatted;
+}
+
+/**
+ * Format code blocks
+ */
+function formatCodeBlocks(content) {
     const codeBlockRegex = /```(\w+)?\n?([\s\S]*?)```/g;
-    
-    let formatted = content.replace(codeBlockRegex, (match, language, code) => {
+    return content.replace(codeBlockRegex, (match, language, code) => {
         const lang = language ? ` class="language-${language}"` : '';
         return `<pre${lang}><code>${escapeHtml(code.trim())}</code></pre>`;
     });
-    
-    // Replace inline code (single backticks)
-    formatted = formatted.replace(/`([^`]+)`/g, '<code>$1</code>');
-    
-    // Escape any remaining HTML and preserve line breaks
-    const parts = formatted.split(/(<pre[\s\S]*?<\/pre>|<code>[\s\S]*?<\/code>)/);
-    formatted = parts.map((part, index) => {
-        if (part.startsWith('<pre') || part.startsWith('<code>')) {
-            return part; // Keep pre and code tags as-is
+}
+
+/**
+ * Format markdown tables
+ */
+function formatTables(content) {
+    const tableRegex = /(\|.*\|\n\|[-:| ]+\|\n(?:\|.*\|\n?)*)/g;
+    return content.replace(tableRegex, (match) => {
+        const lines = match.trim().split('\n');
+        if (lines.length < 2) return match; // Not a valid table
+        
+        const headerLine = lines[0];
+        const separatorLine = lines[1];
+        const dataLines = lines.slice(2);
+        
+        // Check if separator line has at least - or :
+        if (!separatorLine.includes('-') && !separatorLine.includes(':')) return match;
+        
+        let html = '<table><thead><tr>';
+        
+        // Parse header
+        const headers = headerLine.split('|').slice(1, -1).map(h => h.trim());
+        headers.forEach(header => {
+            html += `<th>${formatInlineMarkdown(escapeHtml(header))}</th>`;
+        });
+        html += '</tr></thead><tbody>';
+        
+        // Parse data rows
+        dataLines.forEach(line => {
+            if (line.trim()) {
+                html += '<tr>';
+                const cells = line.split('|').slice(1, -1).map(c => c.trim());
+                cells.forEach(cell => {
+                    html += `<td>${formatInlineMarkdown(escapeHtml(cell))}</td>`;
+                });
+                html += '</tr>';
+            }
+        });
+        
+        html += '</tbody></table>';
+        return html;
+    });
+}
+
+/**
+ * Format inline code
+ */
+function formatInlineCode(content) {
+    return content.replace(/`([^`]+)`/g, '<code>$1</code>');
+}
+
+/**
+ * Format inline markdown (bold, italics, links, etc.)
+ */
+function formatInlineMarkdown(content) {
+    // Split to preserve blocks
+    const parts = content.split(/(<pre[\s\S]*?<\/pre>|<code>[\s\S]*?<\/code>|<table[\s\S]*?<\/table>)/);
+    return parts.map((part) => {
+        if (part.startsWith('<pre') || part.startsWith('<code>') || part.startsWith('<table>')) {
+            return part; // Keep blocks as-is
         }
         // Escape HTML first
         let processed = escapeHtml(part);
         
-        // Apply markdown formatting (outside of code blocks)
+        // Apply markdown formatting
         // Bold: **text** or __text__
         processed = processed.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
         processed = processed.replace(/__(.+?)__/g, '<strong>$1</strong>');
@@ -253,8 +320,6 @@ function formatMessageContent(content) {
         
         return processed;
     }).join('');
-    
-    return formatted;
 }
 
 /**

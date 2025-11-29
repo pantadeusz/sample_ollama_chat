@@ -5,6 +5,9 @@ from flask_cors import CORS
 import json
 import logging
 import datetime
+import os
+import http
+import hashlib
 from ollama_client import OllamaClient
 from config_loader import ConfigLoader
 from jailbreak_detector import JailbreakDetector
@@ -33,6 +36,9 @@ except ValueError as e:
     logger.warning(f"Jailbreak detection not configured: {e}")
     jailbreak_detector = None
 
+# Cache for jailbreak detection results: hash -> is_jailbreak
+jailbreak_cache = {}
+
 
 @app.route("/")
 def index():
@@ -57,34 +63,44 @@ def get_config():
 @app.route("/api/chat", methods=["POST"])
 def chat():
     """Handle chat requests."""
-    data = request.json
+    try:
+        data = request.get_json()
+        logger.debug("DATA: %s", data)
+    except Exception:
+        return jsonify({"error": "Invalid JSON data"}), http.HTTPStatus.BAD_REQUEST
+    if data is None:
+        return jsonify({"error": "No JSON data provided"}), http.HTTPStatus.BAD_REQUEST
     messages = data.get("messages", [])
     model = config_loader.get("model")
     stream = config_loader.get("stream", True)
 
     if not messages:
-        return jsonify({"error": "No messages provided"}), 400
+        return jsonify({"error": "No messages provided"}), http.HTTPStatus.BAD_REQUEST
 
-    # Check for jailbreak attempts if detector is configured
+    # Check for jailbreak attempts in all user messages if detector is configured
     if jailbreak_detector:
-        # Get the last user message for jailbreak detection
-        user_messages = [msg for msg in messages if msg.get("role") == "user"]
-        if user_messages:
-            last_user_message = user_messages[-1]["content"]
-            detection_result = jailbreak_detector.detect_jailbreak(last_user_message)
-            if detection_result.is_jailbreak:
-                logger.warning(
-                    f"Jailbreak attempt detected: {detection_result.detection_request[-100:]}"
-                )
-                return (
-                    jsonify(
-                        {
-                            "error": "Your message appears to be an attempt to bypass security measures. This request cannot be processed.",
-                            "type": "jailbreak_detected",
-                        }
-                    ),
-                    403,
-                )
+        for message in messages:
+            if message.get("role") == "user":
+                user_content = message["content"]
+                content_hash = hashlib.sha256(user_content.encode()).hexdigest()
+
+                if content_hash not in jailbreak_cache:
+                    detection_result = jailbreak_detector.detect_jailbreak(user_content)
+                    jailbreak_cache[content_hash] = detection_result.is_jailbreak
+
+                if jailbreak_cache[content_hash]:
+                    logger.warning(
+                        f"Jailbreak attempt detected in cached message: {user_content[:100]}..."
+                    )
+                    return (
+                        jsonify(
+                            {
+                                "error": "Your message appears to be an attempt to bypass security measures. This request cannot be processed.",
+                                "type": "jailbreak_detected",
+                            }
+                        ),
+                        http.HTTPStatus.FORBIDDEN,
+                    )
 
     # Add system prompt if configured and not already present
     system_prompt = config_loader.get("system_prompt")
@@ -132,7 +148,7 @@ def chat():
     else:
         responses = list(ollama_client.chat(model, messages, stream=False))
         if responses and "error" in responses[0]:
-            return jsonify(responses[0]), 500
+            return jsonify(responses[0]), http.HTTPStatus.INTERNAL_SERVER_ERROR
         return jsonify(responses[0] if responses else {})
 
 
@@ -144,4 +160,4 @@ def reload_config():
 
 
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    app.run(debug=True, host="0.0.0.0", port=int(os.environ.get("FLASK_PORT", 5001)))
