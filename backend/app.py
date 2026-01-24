@@ -19,8 +19,10 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__, static_folder="../frontend", static_url_path="")
 CORS(app)
 
-# Load configuration
-config_loader = ConfigLoader(config_path="../config/config.json")
+# Load configuration (path resolved relative to this file)
+base_dir = os.path.dirname(__file__)
+config_path = os.path.normpath(os.path.join(base_dir, "..", "config", "config.json"))
+config_loader = ConfigLoader(config_path=config_path)
 ollama_client = OllamaClient(base_url=config_loader.get("ollama_url"))
 
 # Initialize jailbreak detector if configured
