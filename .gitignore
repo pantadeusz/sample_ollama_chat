@@ -49,3 +49,5 @@ context/*
 
 # Logs
 *.log
+deployment/*.service
+
