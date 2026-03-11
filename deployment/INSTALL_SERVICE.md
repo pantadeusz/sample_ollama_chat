@@ -3,8 +3,8 @@ Installation and usage
 1) Generate or copy the unit file to systemd and reload:
 
 ```sh
-# From the project root, generate the unit (optional):
-deployment/generate_service.sh --use-launcher
+# From the project root, generate the unit:
+deployment/generate_service.sh
 
 # Copy the generated unit to systemd and reload:
 sudo cp deployment/sample_ollama_chat.service /etc/systemd/system/

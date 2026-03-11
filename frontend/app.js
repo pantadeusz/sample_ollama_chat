@@ -144,45 +144,70 @@ async function handleStreamedResponse(response) {
     const decoder = new TextDecoder();
     let assistantMessage = '';
     let messageElement = null;
+    let buffer = '';
+
+    function processSseEvent(eventText) {
+        const dataLines = eventText
+            .split('\n')
+            .filter((line) => line.startsWith('data:'))
+            .map((line) => line.slice(5).trimStart());
+
+        if (!dataLines.length) return false;
+
+        const jsonStr = dataLines.join('\n');
+
+        try {
+            const data = JSON.parse(jsonStr);
+
+            if (data.error) {
+                addErrorMessage(`Error: ${data.error}`);
+                return true;
+            }
+
+            if (data.message && data.message.content) {
+                assistantMessage += data.message.content;
+
+                if (!messageElement) {
+                    messageElement = addMessage('assistant', assistantMessage);
+                } else {
+                    updateMessageContent(messageElement, assistantMessage);
+                }
+            }
+
+            if (data.done) {
+                state.messages.push({ role: 'assistant', content: assistantMessage });
+            }
+        } catch (e) {
+            console.error('Error parsing JSON:', e);
+        }
+
+        return false;
+    }
     
     try {
         while (true) {
             const { done, value } = await reader.read();
             
-            if (done) break;
-            
-            const chunk = decoder.decode(value, { stream: true });
-            const lines = chunk.split('\n');
-            
-            for (const line of lines) {
-                if (line.startsWith('data: ')) {
-                    const jsonStr = line.slice(6);
-                    try {
-                        const data = JSON.parse(jsonStr);
-                        
-                        if (data.error) {
-                            addErrorMessage(`Error: ${data.error}`);
-                            break;
-                        }
-                        
-                        if (data.message && data.message.content) {
-                            assistantMessage += data.message.content;
-                            
-                            if (!messageElement) {
-                                messageElement = addMessage('assistant', assistantMessage);
-                            } else {
-                                updateMessageContent(messageElement, assistantMessage);
-                            }
-                        }
-                        
-                        if (data.done) {
-                            state.messages.push({ role: 'assistant', content: assistantMessage });
-                        }
-                    } catch (e) {
-                        console.error('Error parsing JSON:', e);
-                    }
+            if (done) {
+                buffer += decoder.decode();
+                break;
+            }
+
+            buffer += decoder.decode(value, { stream: true });
+
+            const events = buffer.split('\n\n');
+            buffer = events.pop() || '';
+
+            for (const eventText of events) {
+                const shouldStop = processSseEvent(eventText);
+                if (shouldStop) {
+                    return;
                 }
             }
+        }
+
+        if (buffer.trim()) {
+            processSseEvent(buffer);
         }
     } catch (error) {
         console.error('Error reading stream:', error);
