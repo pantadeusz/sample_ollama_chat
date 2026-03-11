@@ -27,20 +27,44 @@ class ConfigLoader:
     def load_config(self) -> Dict[str, Any]:
         """
         Load configuration from JSON file.
+        Falls back to config.example.json, then hardcoded defaults.
 
         Returns:
             Dictionary with configuration
         """
-        if not os.path.exists(self.config_path):
-            return self.get_default_config()
+        config_path = self.config_path
+        config_dir = Path(config_path).parent
+
+        # Try primary config path
+        if not os.path.exists(config_path):
+            # Fall back to config.example.json in same directory
+            example_path = config_dir / "config.example.json"
+            if os.path.exists(example_path):
+                logger.info(
+                    f"Config {config_path} not found, falling back to {example_path}"
+                )
+                config_path = str(example_path)
+            else:
+                logger.info(
+                    f"Neither {config_path} nor {example_path} found, using defaults"
+                )
+                return self.get_default_config()
 
         try:
-            with open(self.config_path, "r", encoding="utf-8") as f:
+            with open(config_path, "r", encoding="utf-8") as f:
                 config = json.load(f)
+
+                # Load prompts from directory if specified
+                if "prompts_directory" in config:
+                    prompts_dir = Path(config_path).parent / config["prompts_directory"]
+                    if prompts_dir.exists() and prompts_dir.is_dir():
+                        prompts = self._load_prompts(prompts_dir)
+                        config.update(prompts)
+
                 # Enhance system_prompt with context if available
                 if "context_directory" in config:
                     context_dir = (
-                        Path(self.config_path).parent / config["context_directory"]
+                        Path(config_path).parent / config["context_directory"]
                     )
                     if context_dir.exists() and context_dir.is_dir():
                         context_text = self._load_context(context_dir)
@@ -56,8 +80,31 @@ class ConfigLoader:
                             )
                 return config
         except (json.JSONDecodeError, IOError) as e:
-            logger.error(f"Error loading config: {e}")
+            logger.error(f"Error loading config from {config_path}: {e}")
             return self.get_default_config()
+
+    def _load_prompts(self, prompts_dir: Path) -> Dict[str, str]:
+        """
+        Load prompts from .md files in the specified directory.
+        Maps filename (without extension) to file content.
+
+        Args:
+            prompts_dir: Path to the prompts directory
+
+        Returns:
+            Dictionary with prompt key -> content pairs
+        """
+        prompts = {}
+        for file_path in sorted(prompts_dir.glob("*.md")):
+            try:
+                with open(file_path, "r", encoding="utf-8") as f:
+                    content = f.read()
+                    # Use filename without extension as key
+                    key = file_path.stem
+                    prompts[key] = content
+            except Exception as e:
+                logger.warning(f"Error reading prompt {file_path}: {e}")
+        return prompts
 
     def _load_context(self, context_dir: Path) -> str:
         """
@@ -84,6 +131,7 @@ class ConfigLoader:
     def get_default_config(self) -> Dict[str, Any]:
         """
         Get default configuration.
+        See config/config.example.json for recommended defaults.
 
         Returns:
             Default configuration dictionary

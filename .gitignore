@@ -43,6 +43,7 @@ Thumbs.db
 
 # Config and personal data (keep example files only)
 config/config.json
+prompts.local/
 context/*
 !context/README.md
 !context/.gitkeep

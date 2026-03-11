@@ -121,3 +121,56 @@ class TestConfigLoader:
             assert loader.get("model") == "llama2"
         finally:
             os.unlink(temp_path)
+
+    def test_load_prompts_from_directory(self):
+        """Test loading prompts from a prompts_directory."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # Create a prompts subdirectory
+            prompts_dir = os.path.join(temp_dir, "prompts")
+            os.makedirs(prompts_dir)
+
+            # Create prompt files
+            with open(os.path.join(prompts_dir, "system_prompt.md"), "w") as f:
+                f.write("Test system prompt")
+            with open(os.path.join(prompts_dir, "starter_message.md"), "w") as f:
+                f.write("Test starter message")
+
+            # Create config file that references prompts directory
+            config_path = os.path.join(temp_dir, "config.json")
+            test_config = {
+                "model": "test-model",
+                "ollama_url": "http://localhost:11434",
+                "prompts_directory": "./prompts",
+            }
+            with open(config_path, "w") as f:
+                json.dump(test_config, f)
+
+            # Load config
+            loader = ConfigLoader(config_path=config_path)
+
+            # Verify prompts were loaded from directory
+            assert loader.get("system_prompt") == "Test system prompt"
+            assert loader.get("starter_message") == "Test starter message"
+            assert loader.get("model") == "test-model"
+
+    def test_fallback_to_config_example(self):
+        """Test fallback to config.example.json when config.json doesn't exist."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # Create config.example.json
+            example_config = {
+                "model": "example-model",
+                "ollama_url": "http://localhost:11434",
+                "temperature": 0.7,
+            }
+            example_path = os.path.join(temp_dir, "config.example.json")
+            with open(example_path, "w") as f:
+                json.dump(example_config, f)
+
+            # Try to load config.json (which doesn't exist)
+            config_path = os.path.join(temp_dir, "config.json")
+            loader = ConfigLoader(config_path=config_path)
+
+            # Should have loaded config.example.json instead
+            assert loader.get("model") == "example-model"
+            assert loader.get("ollama_url") == "http://localhost:11434"
+            assert loader.get("temperature") == 0.7
